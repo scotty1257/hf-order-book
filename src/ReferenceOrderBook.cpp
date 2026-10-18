@@ -5,7 +5,8 @@
 //     ReferenceOrderBook orderBook;
 //     orderBook.addLimitOrder(1, Side::Sell, 10050, 100);
 //     orderBook.addLimitOrder(2, Side::Sell, 10050, 200);
-//     std::vector<Fill> fills = orderBook.addLimitOrder(3, Side::Buy, 10050, 150);
+//     std::vector<Fill> fills = orderBook.addLimitOrder(3, Side::Buy, 10050,
+//     150);
 
 //     ASSERT_EQ(fills.size(), 2u);
 //     EXPECT_EQ(fills[0].restingOrderIdentifier, 1u);
@@ -24,7 +25,8 @@
 //     std::int64_t priceInTicks;
 //     std::uint32_t quantity;
 // };
-// `std::map<price, std::list<Order>>` plus `std::unordered_map<orderIdentifier, iterator>`
+// `std::map<price, std::list<Order>>` plus `std::unordered_map<orderIdentifier,
+// iterator>`
 
 // struct Order {
 //   std::uint64_t id;
@@ -37,8 +39,9 @@
 //   }
 // }
 
-std::vector<Fill> ReferenceOrderBook::addLimitOrder(std::uint64_t orderIdentifier, Side side,
-    std::int64_t priceInTicks, std::uint32_t quantity) {
+std::vector<Fill> ReferenceOrderBook::addLimitOrder(
+    std::uint64_t orderIdentifier, Side side, std::int64_t priceInTicks,
+    std::uint32_t quantity) {
 
   // Create our order object for passing into levels;
   Order order{orderIdentifier, side, priceInTicks, quantity};
@@ -65,7 +68,7 @@ std::vector<Fill> ReferenceOrderBook::addLimitOrder(std::uint64_t orderIdentifie
 
 void ReferenceOrderBook::cancelOrder(std::uint64_t orderIdentifier) {
 
-  OrderLocation& location = _locator.at(orderIdentifier);
+  OrderLocation &location = _locator.at(orderIdentifier);
 
   if (location.side == Side::Buy) {
     _bidLevels[location.price].erase(location.position);
@@ -73,7 +76,6 @@ void ReferenceOrderBook::cancelOrder(std::uint64_t orderIdentifier) {
   if (location.side == Side::Sell) {
     _askLevels[location.price].erase(location.position);
   }
-
 }
 
 void ReferenceOrderBook::reduceOrder(
@@ -82,14 +84,29 @@ void ReferenceOrderBook::reduceOrder(
   _locator.at(orderIdentifier).position->quantity -= quantityToRemove;
 }
 
+// TODO: This has to be completed out, not sure how right now ....
 void ReferenceOrderBook::replaceOrder(std::uint64_t oldOrderIdentifier,
     std::uint64_t newOrderIdentifier, std::int64_t newPriceInTicks,
     std::uint32_t newQuantity) {
 
-  OrderLocation& location = _locator.at(oldOrderIdentifier);
+  OrderLocation &location = _locator.at(oldOrderIdentifier);
 
+  if (location.side == Side::Buy) {
+  }
 
+  if (location.side == Side::Sell) {
+  }
+}
 
+std::optional<std::int64_t> ReferenceOrderBook::quantityAtPrice(
+    Side side, PriceInTicks price) {
+
+  if (side == Side::Buy) {
+    std::list<Order> order = _bidLevels.at(price);
+  }
+
+  if (side == Side::Sell) {
+  }
 }
 
 std::optional<std::int64_t> ReferenceOrderBook::bestBidPrice() const {
