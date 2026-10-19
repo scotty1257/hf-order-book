@@ -187,6 +187,8 @@ EOF
 run_doxygen() {
 	print_step "Running Doxygen"
 	rm -rf "$doxygen_output_directory"
+	# Doxygen can only create the last folder in OUTPUT_DIRECTORY, not its parents.
+	mkdir -p "$doxygen_output_directory"
 	doxygen Doxyfile
 
 	if [ ! -f "$doxygen_output_directory/xml/index.xml" ]; then
