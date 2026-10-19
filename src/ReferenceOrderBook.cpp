@@ -1,6 +1,8 @@
 #include "ReferenceOrderBook.hpp"
+#include <algorithm>
+#include <numeric>
 #include <optional>
-
+#include <ranges>
 // TEST(ReferenceOrderBookTest, PartialFillRespectsTimePriority) {
 //     ReferenceOrderBook orderBook;
 //     orderBook.addLimitOrder(1, Side::Sell, 10050, 100);
@@ -40,7 +42,9 @@
 // }
 
 std::vector<Fill> ReferenceOrderBook::addLimitOrder(
-    std::uint64_t orderIdentifier, Side side, std::int64_t priceInTicks,
+    std::uint64_t orderIdentifier,
+    Side side,
+    std::int64_t priceInTicks,
     std::uint32_t quantity) {
 
   // Create our order object for passing into levels;
@@ -78,15 +82,16 @@ void ReferenceOrderBook::cancelOrder(std::uint64_t orderIdentifier) {
   }
 }
 
-void ReferenceOrderBook::reduceOrder(
-    std::uint64_t orderIdentifier, std::uint32_t quantityToRemove) {
+void ReferenceOrderBook::reduceOrder(std::uint64_t orderIdentifier,
+    std::uint32_t quantityToRemove) {
 
   _locator.at(orderIdentifier).position->quantity -= quantityToRemove;
 }
 
 // TODO: This has to be completed out, not sure how right now ....
 void ReferenceOrderBook::replaceOrder(std::uint64_t oldOrderIdentifier,
-    std::uint64_t newOrderIdentifier, std::int64_t newPriceInTicks,
+    std::uint64_t newOrderIdentifier,
+    std::int64_t newPriceInTicks,
     std::uint32_t newQuantity) {
 
   OrderLocation &location = _locator.at(oldOrderIdentifier);
@@ -98,15 +103,33 @@ void ReferenceOrderBook::replaceOrder(std::uint64_t oldOrderIdentifier,
   }
 }
 
-std::optional<std::int64_t> ReferenceOrderBook::quantityAtPrice(
-    Side side, PriceInTicks price) {
+// TODO: Remove these, not a good idea
+std::list<Order> ReferenceOrderBook::bidsAtPrice(PriceInTicks price) const {
+  return _bidLevels.at(price);
+}
 
-  if (side == Side::Buy) {
-    std::list<Order> order = _bidLevels.at(price);
-  }
+std::list<Order> ReferenceOrderBook::asksAtPrice(PriceInTicks price) const {
+  return _askLevels.at(price);
+}
+// END TODO --------------------------------------------------------------------
 
-  if (side == Side::Sell) {
-  }
+Quantity ReferenceOrderBook::quantityAtPrice(Side side, PriceInTicks price) {
+
+  Quantity total = 0;
+
+  std::list<Order> orders =
+      side == Side::Buy ? _bidLevels.at(price) : _askLevels.at(price);
+
+  auto rTotal = [](double price, double currTotal, const Order &o) -> double {
+    return o.price == price ? currTotal + price : currTotal;
+  };
+
+  total = std::accumulate(orders.begin(), orders.end(), 0.0,
+      [rTotal, price](double runningTotal, const Order &order) {
+    return rTotal(price, runningTotal, order);
+  });
+
+  return total;
 }
 
 std::optional<std::int64_t> ReferenceOrderBook::bestBidPrice() const {
