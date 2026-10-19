@@ -18,6 +18,7 @@ FetchContent_MakeAvailable(googletest)
 
 add_library(reference_order_book
   src/ReferenceOrderBook.cpp
+  src/ThreadPool.cpp
 )
 target_include_directories(reference_order_book PUBLIC
                            ${CMAKE_CURRENT_SOURCE_DIR}/include)
