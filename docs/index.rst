@@ -1,16 +1,7 @@
-Order Book
+order-book
 ==========
 
-Core types used by the matching engine.
+.. toctree::
+   :maxdepth: 2
 
-Limit orders
-------------
-
-.. doxygenstruct:: LimitOrder
-   :members:
-
-Bounding rectangle
-------------------
-
-.. doxygenstruct:: BoundingRectangle
-   :members:
+   api/library_root

@@ -1,12 +1,11 @@
-# Doxyfile 1.15.0
-
-PROJECT_NAME      = "Order Book"
-INPUT             = include
-RECURSIVE         = YES
-FILE_PATTERNS     = *.hpp *.h *.cpp
-OUTPUT_DIRECTORY  = build/doxygen
-GENERATE_XML      = YES
-GENERATE_HTML     = NO
-GENERATE_LATEX    = NO
-
-
+# Only the settings that matter for Breathe and Exhale. Doxygen uses defaults for the rest.
+PROJECT_NAME           = "order-book"
+INPUT                  = include
+RECURSIVE              = YES
+FILE_PATTERNS          = *.h *.hh *.hpp *.hxx *.cpp *.cc *.cxx
+EXTRACT_ALL            = YES
+OUTPUT_DIRECTORY       = build/doxygen
+GENERATE_XML           = YES
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+QUIET                  = YES

@@ -2,15 +2,17 @@
 #
 # gen_docs.sh
 #
-# Builds HTML documentation for a C++ project using Doxygen + Sphinx + Breathe.
+# Builds HTML documentation for a C++ project using Doxygen + Sphinx + Breathe + Exhale.
+# Exhale generates one page per class, struct, function, enum and file automatically.
 # Installs uv and Doxygen if they are missing, and creates the Doxyfile,
-# docs/conf.py and docs/index.rst on first run. Existing files are never
-# overwritten, so you can edit them freely afterwards.
+# docs/conf.py and docs/index.rst on first run. Existing files are kept,
+# so you can edit them freely afterwards.
 #
 # Usage:
-#   ./gen_docs.sh            Build the docs
-#   ./gen_docs.sh --open     Build the docs and open them in a browser
-#   ./gen_docs.sh --clean    Delete build output, then build
+#   ./gen_docs.sh               Build the docs
+#   ./gen_docs.sh --open        Build the docs and open them in a browser
+#   ./gen_docs.sh --clean       Delete build output, then build
+#   ./gen_docs.sh --regenerate  Overwrite Doxyfile, docs/conf.py and docs/index.rst with fresh defaults
 #
 # Settings (override with environment variables):
 #   PROJECT_NAME       Title shown in the docs     (default: folder name)
@@ -24,19 +26,22 @@ cd "$script_directory"
 project_name="${PROJECT_NAME:-$(basename "$script_directory")}"
 source_directory="${SOURCE_DIRECTORY:-include}"
 docs_directory="docs"
+exhale_generated_directory="$docs_directory/api"
 build_directory="build"
 doxygen_output_directory="$build_directory/doxygen"
 html_output_directory="$build_directory/html"
 
 should_open_browser="false"
 should_clean="false"
+should_regenerate="false"
 
 for argument in "$@"; do
 	case "$argument" in
 	--open) should_open_browser="true" ;;
 	--clean) should_clean="true" ;;
+	--regenerate) should_regenerate="true" ;;
 	-h | --help)
-		sed -n '3,17p' "$0" | sed 's/^# \{0,1\}//'
+		sed -n '3,19p' "$0" | sed 's/^# \{0,1\}//'
 		exit 0
 		;;
 	*)
@@ -60,6 +65,11 @@ is_windows_shell() {
 	MINGW* | MSYS* | CYGWIN*) return 0 ;;
 	*) return 1 ;;
 	esac
+}
+
+# Returns success when a generated file should be written: it is missing, or --regenerate was passed.
+should_write_file() {
+	[ ! -f "$1" ] || [ "$should_regenerate" = "true" ]
 }
 
 ensure_uv() {
@@ -126,13 +136,13 @@ ensure_source_directory() {
 }
 
 ensure_doxyfile() {
-	if [ -f Doxyfile ]; then
+	if ! should_write_file Doxyfile; then
 		return
 	fi
 
-	print_step "Creating Doxyfile"
+	print_step "Writing Doxyfile"
 	cat >Doxyfile <<EOF
-# Only the settings that matter for Breathe. Doxygen uses defaults for the rest.
+# Only the settings that matter for Breathe and Exhale. Doxygen uses defaults for the rest.
 PROJECT_NAME           = "$project_name"
 INPUT                  = $source_directory
 RECURSIVE              = YES
@@ -149,37 +159,47 @@ EOF
 ensure_sphinx_files() {
 	mkdir -p "$docs_directory"
 
-	if [ ! -f "$docs_directory/conf.py" ]; then
-		print_step "Creating $docs_directory/conf.py"
+	if should_write_file "$docs_directory/conf.py"; then
+		print_step "Writing $docs_directory/conf.py"
 		cat >"$docs_directory/conf.py" <<EOF
 project = "$project_name"
-extensions = ["breathe"]
+extensions = ["breathe", "exhale"]
 
+# Breathe reads the XML that Doxygen writes.
 breathe_projects = {"project": "../$doxygen_output_directory/xml"}
 breathe_default_project = "project"
-breathe_default_members = ("members", "undoc-members")
+
+# Exhale writes one .rst page per type into docs/api on every build.
+# gen_docs.sh runs Doxygen itself, so Exhale doesn't need to.
+exhale_args = {
+    "containmentFolder": "./api",
+    "rootFileName": "library_root.rst",
+    "rootFileTitle": "API Reference",
+    "doxygenStripFromPath": "..",
+    "createTreeView": True,
+    "exhaleExecutesDoxygen": False,
+}
+
+primary_domain = "cpp"
+highlight_language = "cpp"
 
 html_theme = "furo"
 html_title = "$project_name"
 EOF
 	fi
 
-	if [ ! -f "$docs_directory/index.rst" ]; then
-		print_step "Creating $docs_directory/index.rst"
+	if should_write_file "$docs_directory/index.rst"; then
+		print_step "Writing $docs_directory/index.rst"
 		local title_underline
 		title_underline="$(printf '%*s' "${#project_name}" '' | tr ' ' '=')"
 		cat >"$docs_directory/index.rst" <<EOF
 $project_name
 $title_underline
 
-..
-   Replace doxygenindex with specific directives once you want control
-   over the layout, for example:
+.. toctree::
+   :maxdepth: 2
 
-   .. doxygenstruct:: LimitOrder
-      :members:
-
-.. doxygenindex::
+   api/library_root
 EOF
 	fi
 }
@@ -199,9 +219,12 @@ run_doxygen() {
 
 run_sphinx() {
 	print_step "Running Sphinx"
+	# Exhale regenerates this folder; clear it so pages for deleted types don't linger.
+	rm -rf "$exhale_generated_directory"
 	uv run --no-project --quiet \
 		--with sphinx \
 		--with breathe \
+		--with exhale \
 		--with furo \
 		sphinx-build -b html "$docs_directory" "$html_output_directory"
 }
@@ -220,8 +243,8 @@ open_in_browser() {
 }
 
 if [ "$should_clean" = "true" ]; then
-	print_step "Cleaning $build_directory"
-	rm -rf "$build_directory"
+	print_step "Cleaning $build_directory and $exhale_generated_directory"
+	rm -rf "$build_directory" "$exhale_generated_directory"
 fi
 
 ensure_uv

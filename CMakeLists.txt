@@ -36,4 +36,8 @@ target_link_libraries(order_book_test PRIVATE
 )
 
 include(GoogleTest)
-gtest_discover_tests(order_book_test)
+gtest_discover_tests(order_book_test
+  TEST_PREFIX "orderBook."
+  PROPERTIES
+  ENVIRONMENT "GTEST_COLOR=yes"
+TIMEOUT 10)
