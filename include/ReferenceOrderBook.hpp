@@ -67,14 +67,17 @@ public:
   void reduceOrder(Identifier orderIdentifier, Quantity quantityToRemove);
 
   /**
-   * Replace the order completely in place
+   * Replace the order by cancelling the old order and adding a new order
    **/
   void replaceOrder(Identifier oldOrderIdentifier,
       Identifier newOrderIdentifier,
       PriceInTicks newPriceInTicks,
       Quantity newQuantity);
 
-  Quantity quantityAtPrice(Side side, PriceInTicks price);
+  /**
+   * Get the quantity of an Order at a certain price
+   **/
+  Quantity quantityAtPrice(Side side, PriceInTicks price) const;
 
   /**
    * Get the best price for buyer (bid):: best => highest
