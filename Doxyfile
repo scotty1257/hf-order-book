@@ -1,0 +1,12 @@
+# Doxyfile 1.15.0
+
+PROJECT_NAME      = "Order Book"
+INPUT             = include
+RECURSIVE         = YES
+FILE_PATTERNS     = *.hpp *.h *.cpp
+OUTPUT_DIRECTORY  = build/doxygen
+GENERATE_XML      = YES
+GENERATE_HTML     = NO
+GENERATE_LATEX    = NO
+
+
