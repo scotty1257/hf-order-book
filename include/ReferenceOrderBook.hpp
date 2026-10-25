@@ -24,6 +24,10 @@ struct Fill {
   Identifier incomingOrderIdentifier;
   PriceInTicks priceInTicks;
   Quantity quantity;
+
+  Fill(Identifier restingId, Identifier incomingId, PriceInTicks p, Quantity q)
+      : restingOrderIdentifier(restingId), incomingOrderIdentifier(incomingId), priceInTicks(p),
+        quantity(q) {}
 };
 
 struct Order {
@@ -33,11 +37,14 @@ struct Order {
   Quantity quantity;
 };
 
-/// Holds the information about an order and its position in line.
+/** Position of an order within a bid list or an ask list */
+using LevelsIterator = std::list<Order>::iterator;
+
+/** Holds the information about an order and its position in line. */
 struct OrderLocation {
   Side side;
   PriceInTicks price;
-  std::list<Order>::iterator position;
+  LevelsIterator position;
 };
 
 /**
@@ -67,7 +74,7 @@ public:
   void reduceOrder(Identifier orderIdentifier, Quantity quantityToRemove);
 
   /**
-   * Replace the order by cancelling the old order and adding a new order
+   * @brief Replace the order by cancelling the old order and adding a new order
    **/
   void replaceOrder(Identifier oldOrderIdentifier,
       Identifier newOrderIdentifier,
@@ -91,8 +98,18 @@ public:
    **/
   std::optional<PriceInTicks> bestAskPrice() const;
 
-  std::list<Order> bidsAtPrice(PriceInTicks price) const;
+  /**
+   * Get the list of orders corresponding to the highest bid.
+   **/
+  std::list<Order> &ordersAtBestBid();
+
+  /**
+   * Get the list of orders corresponding to the lowest ask.
+   **/
+  std::list<Order> &ordersAtBestAsk();
+
   std::list<Order> asksAtPrice(PriceInTicks price) const;
+  std::list<Order> bidsAtPrice(PriceInTicks price) const;
 
 private:
   PriceInTicks _bestBid;
