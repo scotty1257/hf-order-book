@@ -32,12 +32,16 @@ target_compile_options(reference_order_book PRIVATE -Wall -Wextra -Wpedantic)
 # ==============================================================================
 enable_testing()
 
-add_executable(order_book_test test/OrderBookTest.cpp test/SimpleOrderTest.cpp)
+add_executable(order_book_test
+  test/OrderBookTest.cpp
+  test/SimpleOrderTest.cpp
+  test/GTestMain.cpp
+)
 
 target_compile_options(order_book_test PRIVATE -Wall -Wextra)
 
-target_link_libraries(order_book_test PRIVATE 
-  reference_order_book GTest::gtest_main)
+target_link_libraries(order_book_test PRIVATE
+  reference_order_book GTest::gtest)
 
 include(GoogleTest)
 gtest_discover_tests(order_book_test

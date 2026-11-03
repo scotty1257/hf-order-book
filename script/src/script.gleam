@@ -124,14 +124,18 @@ import gleam/int
 import gleam/io
 import gleam/list
 import gleam/result
-import gleam/string
-import gleam_community/ansi
 import glint
-import glint/constraint
-import package
 import package
 import shellout
+import simplifile
 import snag
+
+pub fn file_exists(f: String) -> Bool {
+  case simplifile.exists(f, False) {
+    Ok(_) -> True
+    Error(_) -> False
+  }
+}
 
 /// Call an external process using its PATH name
 pub fn call_external_command(cmd: String, args: List(String), dir: String) {
@@ -192,7 +196,7 @@ pub fn config_cmd() {
       )
     Ok("node") -> call_external_command("echo", ["Node Configuration"], ".")
     Ok("py") -> call_external_command("echo", ["Python Configuration"], ".")
-    Error(err) -> io.print("YOINK" <> err.issue)
+    Error(err) -> io.println_error(err.issue)
     _ -> call_external_command("echo", ["Testing this echo command"], ".")
   }
 }
@@ -200,9 +204,15 @@ pub fn config_cmd() {
 pub fn add_pkg_cmd() {
   use <- glint.command_help("Configure a new project.")
 
-  use _, _args, _flags <- glint.command()
+  use <- glint.unnamed_args(glint.MinArgs(1))
 
-  call_external_command("", [], ".")
+  use _named, unnamed, _flags <- glint.command()
+
+  echo unnamed
+
+  // package.manager(package.)
+
+  call_external_command("[ -f \"abc.txt\" ] && echo \"Exists\"", [], ".")
 }
 
 pub fn test_cmd() {
@@ -210,17 +220,19 @@ pub fn test_cmd() {
 
   use get_run_all <- glint.flag(
     glint.bool_flag("all")
-    |> glint.flag_default(True)
+    |> glint.flag_default(False)
     |> glint.flag_help("Run all tests in project"),
   )
 
-  use _named, _args, flags <- glint.command()
+  use <- glint.unnamed_args(glint.MinArgs(0))
+
+  use _named, args, flags <- glint.command()
 
   let assert Ok(run_all) = get_run_all(flags)
 
   case run_all {
     True -> call_external_command("echo", ["Testing this echo command"], ".")
-    False -> call_external_command("echo", ["Testing this echo command"], ".")
+    False -> call_external_command("echo", args, ".")
   }
 }
 
@@ -260,10 +272,6 @@ pub fn app() {
 
 pub fn main() -> Nil {
   glint.run(app(), argv.load().arguments)
-
-  list.each([1, 2, 3], fn(a) { io.print(int.to_string(a)) })
-
-  echo "pkg" <> package.manager(package.Cpp)
 
   Nil
 }
